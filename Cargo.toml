@@ -1,0 +1,8 @@
+[package]
+name = "rfast-find"
+version = "0.0.1"
+authors = ["Nursultan Baktybekov orenvady@gmail.com"]
+edition = "2024"
+license = "GPL-2.0-or-later"
+
+[dependencies]
