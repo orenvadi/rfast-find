@@ -14,6 +14,10 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use clap::Parser;
+use std::{
+    fs::{self},
+    path::{Path, PathBuf},
+};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -30,6 +34,25 @@ struct Args {
     text_to_find: Option<Vec<String>>,
 }
 
+fn list_files_in_dir<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
+    let files = fs::read_dir(dir).unwrap().into_iter();
+
+    let mut dirs_in_stack = vec![files];
+
+    let mut list_files = Vec::new();
+
+    while let Some(files_list) = dirs_in_stack.pop() {
+        for file in files_list {
+            let filepath = file.unwrap().path();
+            if filepath.is_dir() {
+                dirs_in_stack.push(fs::read_dir(&filepath).unwrap().into_iter());
+            }
+            list_files.push(filepath)
+        }
+    }
+    list_files
+}
+
 fn main() {
     let args = Args::parse();
     match args.text_to_find {
@@ -40,5 +63,12 @@ fn main() {
         None => {
             println!("No text to search is provided")
         }
+    }
+
+    let files = list_files_in_dir("test");
+
+    for file in files {
+        let file_content = fs::read_to_string(file);
+        println!("{}", file_content.unwrap())
     }
 }
