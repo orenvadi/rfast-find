@@ -1,0 +1,19 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: gram://docs/debugger
+
+[
+  {
+    "label": "Debug rfast-find",
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$GRAM_WORKTREE_ROOT/target/debug/rfast-find",
+    "args": ["name"],
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+]

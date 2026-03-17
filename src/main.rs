@@ -15,6 +15,7 @@
 
 use clap::Parser;
 use std::{
+    convert::AsRef,
     fs::{self},
     path::{Path, PathBuf},
 };
@@ -53,22 +54,51 @@ fn list_files_in_dir<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
     list_files
 }
 
+fn find_matching_line_in_file<P: AsRef<Path> + std::fmt::Debug>(
+    path_buf: P,
+    text_to_find: String,
+) -> Option<Vec<String>> {
+    let mut matching_lines = vec![];
+    if let Ok(file_content) = fs::read_to_string(&path_buf) {
+        // Grab the first search term if it exists
+        for (i, file_line) in file_content.lines().enumerate() {
+            if file_line.contains(&text_to_find) {
+                matching_lines.push(format!("{}: {}", i + 1, file_line))
+            }
+        }
+    }
+
+    if matching_lines.len() > 0 {
+        Some(matching_lines)
+    } else {
+        None
+    }
+}
+
 fn main() {
     let args = Args::parse();
+
     match args.text_to_find {
         Some(ref text_to_find) => {
-            text_to_find.iter().for_each(|arg| print!("{} ", arg));
-            println!();
+            let mut found_lines = vec![];
+
+            // Note: Ensure you have a list_files_in_dir function defined elsewhere
+            let files = list_files_in_dir("test");
+
+            for file in files {
+                // Read file, handling potential errors gracefully
+                let search_pattern = text_to_find.first().unwrap();
+                let lines_found_in_file =
+                    find_matching_line_in_file(file, search_pattern.to_string());
+                if let Some(lines_found) = lines_found_in_file {
+                    found_lines.push(lines_found);
+                }
+            }
+
+            println!("found {:?}", found_lines);
         }
         None => {
             println!("No text to search is provided")
         }
-    }
-
-    let files = list_files_in_dir("test");
-
-    for file in files {
-        let file_content = fs::read_to_string(file);
-        println!("{}", file_content.unwrap())
-    }
+    };
 }
