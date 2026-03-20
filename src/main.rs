@@ -15,6 +15,7 @@
 
 use clap::Parser;
 use colored::Colorize;
+use rayon::prelude::*;
 use std::{
     collections::HashMap,
     convert::AsRef,
@@ -45,14 +46,14 @@ fn list_files_in_dir<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
     while let Some(current_path) = stack.pop() {
         // Read the directory, handle errors (like permission denied) gracefully
         if let Ok(entries) = fs::read_dir(current_path) {
-            for entry in entries.flatten() {
+            entries.flatten().for_each(|entry| {
                 let path = entry.path();
                 if path.is_dir() {
                     stack.push(path.clone());
                 }
                 // Push all paths, or filter for only files if preferred
                 list_files.push(path);
-            }
+            });
         }
     }
     list_files
@@ -68,11 +69,11 @@ fn find_matching_line_in_file(
     if let Ok(file_content) = fs::read_to_string(path) {
         let mut lines_found = Vec::new();
 
-        for (i, file_line) in file_content.lines().enumerate() {
+        file_content.lines().enumerate().for_each(|(i, file_line)| {
             if file_line.contains(text_to_find) {
                 lines_found.push(format!("{}: {}", i + 1, file_line));
             }
-        }
+        });
 
         // Если что-то нашли, добавляем в мапу
         if !lines_found.is_empty() {
@@ -93,22 +94,23 @@ fn main() {
 
     match args.text_to_find {
         Some(ref text_to_find) => {
-            let mut found_lines = vec![];
+            // let mut found_lines = vec![];
 
             // Note: Ensure you have a list_files_in_dir function defined elsewhere
             let files = list_files_in_dir("/home/orenvadi/Repos/");
+            // let files = list_files_in_dir("./test");
             let search_pattern = text_to_find.first().unwrap();
 
-            for file in files {
-                // Read file, handling potential errors gracefully
-                let lines_found_in_file = find_matching_line_in_file(&file, search_pattern);
-                if let Some(lines_found) = lines_found_in_file {
-                    found_lines.push(lines_found);
-                }
-            }
+            let found_lines: Vec<_> = files
+                .par_iter()
+                .filter_map(|file| {
+                    // Read file, handling potential errors gracefully
+                    find_matching_line_in_file(&file, search_pattern)
+                })
+                .collect();
 
             found_lines.iter().for_each(|found_line| {
-                found_line.iter().for_each(|(file_name, lines)| {
+                found_line.par_iter().for_each(|(file_name, lines)| {
                     println!("FILE {}", file_name);
                     println!("{}", "=".to_string().repeat((file_name.len() + 5) * 3));
                     lines.iter().for_each(|line| {
