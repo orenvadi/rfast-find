@@ -60,12 +60,12 @@ fn list_files_in_dir<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
 }
 
 fn find_matching_line_in_file(
-    path: &Path,        // Принимаем ссылку на путь
-    text_to_find: &str, // Используем &str вместо String для гибкости
+    path: &Path,        // Reference to a path
+    text_to_find: &str, // Use &str instead of String for flexibility
 ) -> Option<HashMap<String, Vec<String>>> {
     let mut matching_lines: HashMap<String, Vec<String>> = HashMap::new();
 
-    // Читаем файл. Если ошибка (например, файл не найден), просто возвращаем None
+    // Read file. If error (f.e., file not found), jus return None
     if let Ok(file_content) = fs::read_to_string(path) {
         let mut lines_found = Vec::new();
 
@@ -75,7 +75,7 @@ fn find_matching_line_in_file(
             }
         });
 
-        // Если что-то нашли, добавляем в мапу
+        // If we found something, add to Map
         if !lines_found.is_empty() {
             let path_str = path.to_string_lossy().into_owned();
             matching_lines.insert(path_str, lines_found);
@@ -94,11 +94,7 @@ fn main() {
 
     match args.text_to_find {
         Some(ref text_to_find) => {
-            // let mut found_lines = vec![];
-
-            // Note: Ensure you have a list_files_in_dir function defined elsewhere
-            let files = list_files_in_dir("/home/orenvadi/Repos/");
-            // let files = list_files_in_dir("./test");
+            let files = list_files_in_dir(".");
             let search_pattern = text_to_find.first().unwrap();
 
             let found_lines: Vec<_> = files
