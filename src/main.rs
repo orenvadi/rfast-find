@@ -38,19 +38,21 @@ struct Args {
 }
 
 fn list_files_in_dir<P: AsRef<Path>>(dir: P) -> Vec<PathBuf> {
-    let files = fs::read_dir(dir).unwrap().into_iter();
-
-    let mut dirs_in_stack = vec![files];
-
     let mut list_files = Vec::new();
+    // Only store the paths, not the open ReadDir iterators
+    let mut stack = vec![dir.as_ref().to_path_buf()];
 
-    while let Some(files_list) = dirs_in_stack.pop() {
-        for file in files_list {
-            let filepath = file.unwrap().path();
-            if filepath.is_dir() {
-                dirs_in_stack.push(fs::read_dir(&filepath).unwrap().into_iter());
+    while let Some(current_path) = stack.pop() {
+        // Read the directory, handle errors (like permission denied) gracefully
+        if let Ok(entries) = fs::read_dir(current_path) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    stack.push(path.clone());
+                }
+                // Push all paths, or filter for only files if preferred
+                list_files.push(path);
             }
-            list_files.push(filepath)
         }
     }
     list_files
@@ -94,7 +96,7 @@ fn main() {
             let mut found_lines = vec![];
 
             // Note: Ensure you have a list_files_in_dir function defined elsewhere
-            let files = list_files_in_dir("test");
+            let files = list_files_in_dir("/home/orenvadi/Repos/");
             let search_pattern = text_to_find.first().unwrap();
 
             for file in files {
